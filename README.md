@@ -1,2 +1,0 @@
-# nenesport
-Oficial nenesport repository
