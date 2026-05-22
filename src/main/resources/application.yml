@@ -28,3 +28,6 @@ google:
   sheets:
     spreadsheet-id: 13JG71z4WHQYay9VAGNiJNrVCH7UTaTta-eAk7A_fmQU
     credentials-file: classpath:sheetsCredentials.json
+
+storage:
+  images-path: ./images/items/
