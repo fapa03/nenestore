@@ -25,4 +25,9 @@ public class SyncController {
     public Map<String, Object> confirm(@RequestBody List<Map<String, Object>> confirmedOrders) throws Exception {
         return syncService.confirmSync(confirmedOrders);
     }
+
+    @PostMapping("/all")
+    public Map<String, Object> syncAll() throws Exception {
+        return syncService.syncAll();
+    }
 }

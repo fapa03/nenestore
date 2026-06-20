@@ -12,13 +12,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.nenestore.api.service.GenderTagger;
 
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-
 
 @Service
 public class SyncService {
@@ -32,12 +30,12 @@ public class SyncService {
     private final GenderTagger genderTagger;
 
     public SyncService(GoogleSheetsService googleSheetsService,
-                       OrderRepository orderRepository,
-                       ItemRepository itemRepository,
-                       SyncLogRepository syncLogRepository,
-                       SkuService skuService,
-                       ImageService imageService,
-                       GenderTagger genderTagger) {
+            OrderRepository orderRepository,
+            ItemRepository itemRepository,
+            SyncLogRepository syncLogRepository,
+            SkuService skuService,
+            ImageService imageService,
+            GenderTagger genderTagger) {
         this.googleSheetsService = googleSheetsService;
         this.orderRepository = orderRepository;
         this.itemRepository = itemRepository;
@@ -63,14 +61,14 @@ public class SyncService {
             // collect items for this order
             List<Map<String, Object>> itemPreviews = new ArrayList<>();
             for (SheetItem item : allItems) {
-                if (!item.getOrderId().equals(sheetOrder.getOrderNumber())) continue;
+                if (!item.getOrderId().equals(sheetOrder.getOrderNumber()))
+                    continue;
 
                 // STEP 4 — auto tag gender
                 String gender = genderTagger.tag(
-                    sheetOrder.getOrderNumber(),
-                    item.getProduct(),
-                    item.getSize()
-                );
+                        sheetOrder.getOrderNumber(),
+                        item.getProduct(),
+                        item.getSize());
 
                 Map<String, Object> itemMap = new LinkedHashMap<>();
                 itemMap.put("product", item.getProduct());
@@ -109,7 +107,8 @@ public class SyncService {
                 String orderNumber = (String) orderData.get("orderNumber");
 
                 // double check — skip if already exists
-                if (orderRepository.findByOrderId(orderNumber).isPresent()) continue;
+                if (orderRepository.findByOrderId(orderNumber).isPresent())
+                    continue;
 
                 // STEP 3 — parse and validate date
                 LocalDate orderDate = parseDate((String) orderData.get("orderDate"));
@@ -119,15 +118,14 @@ public class SyncService {
                 order.setOrderId(orderNumber);
                 order.setOrderDate(orderDate);
                 order.setTotalPrice(BigDecimal.valueOf(
-                    ((Number) orderData.get("totalPrice")).doubleValue()));
-                order.setTotalItems(0);  
+                        ((Number) orderData.get("totalPrice")).doubleValue()));
+                order.setTotalItems(0);
                 order.setCreatedAt(LocalDateTime.now());
                 order.setUpdatedAt(LocalDateTime.now());
                 Order savedOrder = orderRepository.save(order);
 
                 // STEP 5+6+7+8 — expand items into units
-                List<Map<String, Object>> items =
-                    (List<Map<String, Object>>) orderData.get("items");
+                List<Map<String, Object>> items = (List<Map<String, Object>>) orderData.get("items");
 
                 int unitIndex = skuService.getNextUnitIndex(orderNumber);
 
@@ -139,7 +137,7 @@ public class SyncService {
                     String size = (String) itemData.get("size");
                     String imageUrl = (String) itemData.get("imageUrl");
                     BigDecimal price = BigDecimal.valueOf(
-                        ((Number) itemData.get("purchasePriceUsd")).doubleValue());
+                            ((Number) itemData.get("purchasePriceUsd")).doubleValue());
 
                     // STEP 5 — expand by quantity
                     for (int i = 0; i < quantity; i++) {
@@ -181,9 +179,8 @@ public class SyncService {
             syncLogRepository.save(log);
 
             return Map.of(
-                "status", "SUCCESS",
-                "itemsProcessed", totalProcessed
-            );
+                    "status", "SUCCESS",
+                    "itemsProcessed", totalProcessed);
 
         } catch (Exception e) {
             log.setFinishedAt(LocalDateTime.now());
@@ -198,14 +195,24 @@ public class SyncService {
     private LocalDate parseDate(String raw) {
         try {
             return LocalDate.parse(raw.trim());
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         try {
-            DateTimeFormatter fallback =
-                DateTimeFormatter.ofPattern("M/d/yyyy H:mm:ss");
+            DateTimeFormatter fallback = DateTimeFormatter.ofPattern("M/d/yyyy H:mm:ss");
             return LocalDate.parse(raw.trim(), fallback);
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         throw new RuntimeException("Unparseable date: " + raw);
     }
+
+    public Map<String, Object> syncAll() throws Exception {
+        List<Map<String, Object>> newOrders = previewNewOrders();
+        if (newOrders.isEmpty()) {
+            return Map.of("status", "UP_TO_DATE", "itemsProcessed", 0);
+        }
+        return confirmSync(newOrders);
+    }
+
 }

@@ -1,0 +1,17 @@
+info:
+  name: Google Sheet Sync
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: http://localhost:8080/api/sync/all
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhbnRvbmlvIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzgxOTgyMTQ0LCJleHAiOjE3ODIwNjg1NDR9.8NxWv0n2dDid13VEUHMkjZptVUD-qzad7jHppIj3jCdV2pxhhrtRkiu3bFy4qrSg
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

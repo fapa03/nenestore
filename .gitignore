@@ -33,3 +33,4 @@ build/
 .vscode/
 # Google credentials
 src/main/resources/sheetsCredentials.json
+images/
