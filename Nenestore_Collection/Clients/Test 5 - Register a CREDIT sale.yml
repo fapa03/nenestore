@@ -1,0 +1,32 @@
+info:
+  name: Test 5 - Register a CREDIT sale
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: http://localhost:8080/api/sales
+  body:
+    type: json
+    data: |-
+      {
+        "clientId": 1,
+        "paymentType": "CREDIT",
+        "discountMxn": 100,
+        "notes": "credit sale test",
+        "items": [
+          {
+            "itemId": 2,
+            "priceMxn": 850.00
+          }
+        ]
+      }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhbnRvbmlvIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzgyNDI5OTg5LCJleHAiOjE3ODI1MTYzODl9.KqhSnKGVajCp9ZR9cskwxL5Y-EyeO9fmu3lBKpOqebTZ7aHG3Qt3izVg9XM5x0o_
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

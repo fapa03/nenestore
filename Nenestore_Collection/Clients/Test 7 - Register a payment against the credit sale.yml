@@ -1,0 +1,24 @@
+info:
+  name: Test 7 - Register a payment against the credit sale
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: http://localhost:8080/api/sales/credit/1/payments
+  body:
+    type: json
+    data: |-
+      {
+        "amount": 300,
+        "notes": "first deposit"
+      }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhbnRvbmlvIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzgyNDI5OTg5LCJleHAiOjE3ODI1MTYzODl9.KqhSnKGVajCp9ZR9cskwxL5Y-EyeO9fmu3lBKpOqebTZ7aHG3Qt3izVg9XM5x0o_
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
