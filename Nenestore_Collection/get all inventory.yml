@@ -1,0 +1,17 @@
+info:
+  name: get all inventory
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: http://localhost:8080/api/inventory
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhbnRvbmlvIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzgyMzQ3NjA1LCJleHAiOjE3ODI0MzQwMDV9.xFXWaCTHeU96K26QEboeAJR_beJm-DTNn9vAkIdqAwZnrztjN_E7WvDcu4XW-cQf
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

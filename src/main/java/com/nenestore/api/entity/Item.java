@@ -55,48 +55,135 @@ public class Item {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    @Column(name = "barcode")
 
-    public Order getOrder() { return order; }
-    public void setOrder(Order order) { this.order = order; }
+    private String barcode;
 
-    public String getSku() { return sku; }
-    public void setSku(String sku) { this.sku = sku; }
+    public String getBarcode() {
+        return barcode;
+    }
 
-    public String getProduct() { return product; }
-    public void setProduct(String product) { this.product = product; }
+    public void setBarcode(String barcode) {
+        this.barcode = barcode;
+    }
 
-    public String getColor() { return color; }
-    public void setColor(String color) { this.color = color; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getSize() { return size; }
-    public void setSize(String size) { this.size = size; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getGender() { return gender; }
-    public void setGender(String gender) { this.gender = gender; }
+    public Order getOrder() {
+        return order;
+    }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public void setOrder(Order order) {
+        this.order = order;
+    }
 
-    public BigDecimal getPurchasePriceUsd() { return purchasePriceUsd; }
-    public void setPurchasePriceUsd(BigDecimal purchasePriceUsd) { this.purchasePriceUsd = purchasePriceUsd; }
+    public String getSku() {
+        return sku;
+    }
 
-    public BigDecimal getSalePriceMxn() { return salePriceMxn; }
-    public void setSalePriceMxn(BigDecimal salePriceMxn) { this.salePriceMxn = salePriceMxn; }
+    public void setSku(String sku) {
+        this.sku = sku;
+    }
 
-    public BigDecimal getSelledPriceMxn() { return selledPriceMxn; }
-    public void setSelledPriceMxn(BigDecimal selledPriceMxn) { this.selledPriceMxn = selledPriceMxn; }
+    public String getProduct() {
+        return product;
+    }
 
-    public String getImageUrl() { return imageUrl; }
-    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    public void setProduct(String product) {
+        this.product = product;
+    }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public String getColor() {
+        return color;
+    }
 
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public void setColor(String color) {
+        this.color = color;
+    }
 
-    public LocalDateTime getDeletedAt() { return deletedAt; }
-    public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
+    public String getSize() {
+        return size;
+    }
+
+    public void setSize(String size) {
+        this.size = size;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public BigDecimal getPurchasePriceUsd() {
+        return purchasePriceUsd;
+    }
+
+    public void setPurchasePriceUsd(BigDecimal purchasePriceUsd) {
+        this.purchasePriceUsd = purchasePriceUsd;
+    }
+
+    public BigDecimal getSalePriceMxn() {
+        return salePriceMxn;
+    }
+
+    public void setSalePriceMxn(BigDecimal salePriceMxn) {
+        this.salePriceMxn = salePriceMxn;
+    }
+
+    public BigDecimal getSelledPriceMxn() {
+        return selledPriceMxn;
+    }
+
+    public void setSelledPriceMxn(BigDecimal selledPriceMxn) {
+        this.selledPriceMxn = selledPriceMxn;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
 }

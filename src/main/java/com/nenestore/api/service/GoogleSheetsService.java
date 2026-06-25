@@ -9,7 +9,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class GoogleSheetsService {
@@ -23,70 +25,91 @@ public class GoogleSheetsService {
         this.sheetsService = sheetsService;
     }
 
+    // ── Orders ────────────────────────────────────────────────────────────────
     public List<SheetOrder> getOrders() throws IOException {
         ValueRange response = sheetsService.spreadsheets().values()
-                .get(spreadsheetId, "orders!A2:D")
+                .get(spreadsheetId, "orders!A1:D")
                 .execute();
 
-        List<SheetOrder> orders = new ArrayList<>();
         List<List<Object>> rows = response.getValues();
+        if (rows == null || rows.size() < 2)
+            return new ArrayList<>();
 
-        if (rows == null || rows.isEmpty())
-            return orders;
+        // First row = headers
+        Map<String, Integer> colMap = buildColumnMap(rows.get(0));
 
-        for (List<Object> row : rows) {
-            if (row.size() < 4)
+        List<SheetOrder> orders = new ArrayList<>();
+        for (int i = 1; i < rows.size(); i++) {
+            List<Object> row = rows.get(i);
+            if (row.isEmpty())
                 continue;
             orders.add(new SheetOrder(
-                    str(row, 0),
-                    str(row, 1),
-                    toDouble(row, 2),
-                    toInt(row, 3)));
+                    str(row, colMap, "order_number"),
+                    str(row, colMap, "order_date"),
+                    toDouble(row, colMap, "total_price"),
+                    toInt(row, colMap, "total_items")));
         }
         return orders;
     }
 
+    // ── Items ─────────────────────────────────────────────────────────────────
     public List<SheetItem> getItems() throws IOException {
         ValueRange response = sheetsService.spreadsheets().values()
-                .get(spreadsheetId, "items!A2:G")
+                .get(spreadsheetId, "items!A1:G")
                 .execute();
 
-        List<SheetItem> items = new ArrayList<>();
         List<List<Object>> rows = response.getValues();
+        if (rows == null || rows.size() < 2)
+            return new ArrayList<>();
 
-        if (rows == null || rows.isEmpty())
-            return items;
+        // First row = headers
+        Map<String, Integer> colMap = buildColumnMap(rows.get(0));
 
-        for (List<Object> row : rows) {
-            if (row.size() < 7)
+        List<SheetItem> items = new ArrayList<>();
+        for (int i = 1; i < rows.size(); i++) {
+            List<Object> row = rows.get(i);
+            if (row.isEmpty())
                 continue;
             items.add(new SheetItem(
-                    str(row, 0),
-                    str(row, 1),
-                    str(row, 2),
-                    toInt(row, 3),
-                    str(row, 4),
-                    str(row, 5),
-                    toDouble(row, 6)));
+                    str(row, colMap, "order_id"),
+                    str(row, colMap, "product"),
+                    str(row, colMap, "image_url"),
+                    toInt(row, colMap, "quantity"),
+                    str(row, colMap, "color"),
+                    str(row, colMap, "size"),
+                    toDouble(row, colMap, "purchase_price_usd")));
         }
         return items;
     }
 
-    private String str(List<Object> row, int i) {
-        return row.get(i) != null ? row.get(i).toString().trim() : "";
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private Map<String, Integer> buildColumnMap(List<Object> headerRow) {
+        Map<String, Integer> map = new HashMap<>();
+        for (int i = 0; i < headerRow.size(); i++) {
+            map.put(headerRow.get(i).toString().trim().toLowerCase(), i);
+        }
+        return map;
     }
 
-    private Double toDouble(List<Object> row, int i) {
+    private String str(List<Object> row, Map<String, Integer> colMap, String colName) {
+        Integer idx = colMap.get(colName);
+        if (idx == null || idx >= row.size() || row.get(idx) == null)
+            return "";
+        return row.get(idx).toString().trim();
+    }
+
+    private Double toDouble(List<Object> row, Map<String, Integer> colMap, String colName) {
         try {
-            return Double.parseDouble(str(row, i));
+            return Double.parseDouble(str(row, colMap, colName));
         } catch (Exception e) {
             return 0.0;
         }
     }
 
-    private Integer toInt(List<Object> row, int i) {
+    private Integer toInt(List<Object> row, Map<String, Integer> colMap, String colName) {
         try {
-            return Integer.parseInt(str(row, i));
+            return Integer.parseInt(str(row, colMap, colName));
         } catch (Exception e) {
             return 0;
         }

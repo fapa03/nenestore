@@ -128,7 +128,7 @@ public class SyncService {
                 List<Map<String, Object>> items = (List<Map<String, Object>>) orderData.get("items");
 
                 int unitIndex = skuService.getNextUnitIndex(orderNumber);
-
+                int orderUnitCount = 0;
                 for (Map<String, Object> itemData : items) {
                     int quantity = ((Number) itemData.get("quantity")).intValue();
                     String gender = (String) itemData.get("gender");
@@ -161,14 +161,14 @@ public class SyncService {
                         item.setCreatedAt(LocalDateTime.now());
                         item.setUpdatedAt(LocalDateTime.now());
                         itemRepository.save(item);
-
+                        orderUnitCount++;
                         unitIndex++;
                         totalProcessed++;
                     }
                 }
 
                 // update total_items with real unit count
-                savedOrder.setTotalItems(totalProcessed);
+                savedOrder.setTotalItems(orderUnitCount);
                 orderRepository.save(savedOrder);
             }
 
