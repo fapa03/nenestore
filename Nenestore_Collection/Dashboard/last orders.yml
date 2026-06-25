@@ -1,0 +1,17 @@
+info:
+  name: last orders
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: http://localhost:8080/api/dashboard/orders
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhbnRvbmlvIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzgyNDI2MjczLCJleHAiOjE3ODI1MTI2NzN9.GOrmWCTeHMwV9U819A8B3OLQU7__36zSMjdGy4k5VCb4_Mqaa6SXRFeq9diFEhbn
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
