@@ -1,6 +1,8 @@
 package com.nenestore.api.service;
 
 import com.nenestore.api.entity.*;
+import com.nenestore.api.exception.ConflictException;
+import com.nenestore.api.exception.ResourceNotFoundException;
 import com.nenestore.api.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,7 +65,7 @@ public class SaleService {
         // attach client if provided
         if (clientId != null) {
             Client client = clientRepository.findById(clientId)
-                    .orElseThrow(() -> new RuntimeException("Client not found: " + clientId));
+                    .orElseThrow(() -> new ResourceNotFoundException("Client not found: " + clientId));
             sale.setClient(client);
         }
 
@@ -78,10 +80,10 @@ public class SaleService {
             BigDecimal priceMxn = new BigDecimal(itemData.get("priceMxn").toString());
 
             Item item = itemRepository.findById(itemId)
-                    .orElseThrow(() -> new RuntimeException("Item not found: " + itemId));
+                    .orElseThrow(() -> new ResourceNotFoundException("Item not found: " + itemId));
 
             if (!item.getStatus().equals("Stock")) {
-                throw new RuntimeException("Item " + item.getSku() + " is not available");
+                throw new ConflictException("Item " + item.getSku() + " is not available");
             }
 
             // mark item as sold
@@ -141,11 +143,11 @@ public class SaleService {
     public Map<String, Object> registerPayment(Long creditSaleId,
             Map<String, Object> body) {
         CreditSale creditSale = creditSaleRepository.findById(creditSaleId)
-                .orElseThrow(() -> new RuntimeException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Credit sale not found: " + creditSaleId));
 
         if (creditSale.getStatus().equals("PAID")) {
-            throw new RuntimeException("This credit sale is already fully paid");
+            throw new ConflictException("This credit sale is already fully paid");
         }
 
         BigDecimal amount = new BigDecimal(body.get("amount").toString());

@@ -1,6 +1,7 @@
 package com.nenestore.api.service;
 
 import com.nenestore.api.entity.Client;
+import com.nenestore.api.exception.ResourceNotFoundException;
 import com.nenestore.api.repository.ClientRepository;
 import org.springframework.stereotype.Service;
 
@@ -23,7 +24,7 @@ public class ClientService {
 
     public Client getClientById(Long id) {
         return clientRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Client not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Client not found: " + id));
     }
 
     public Client createClient(Client client) {

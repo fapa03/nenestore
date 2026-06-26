@@ -1,0 +1,20 @@
+info:
+  name: Test 3 — credit sale already paid (409)
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: http://localhost:8080/api/sales/credit/1/payments
+  body:
+    type: json
+    data: '{"amount": 99999, "notes": "overpay test"}'
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhbnRvbmlvIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzgyNDMyNTEyLCJleHAiOjE3ODI1MTg5MTJ9.jvlmrzvEsrPxSXfwE9y-HKgnBFWxHpSztNOK02M3Ku_Sxjo9Wg0Xs6oIDBWBSzEq
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

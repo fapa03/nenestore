@@ -2,10 +2,10 @@ package com.nenestore.api.service;
 
 import com.nenestore.api.dto.InventoryResponse;
 import com.nenestore.api.entity.Item;
+import com.nenestore.api.exception.ResourceNotFoundException;
 import com.nenestore.api.repository.ItemRepository;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,7 +32,7 @@ public class InventoryService {
 
     public InventoryResponse updateStatus(Long id, String status) {
         Item item = itemRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Item not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Item not found: " + id));
         item.setStatus(status);
         item.setUpdatedAt(java.time.LocalDateTime.now());
         return toResponse(itemRepository.save(item));
@@ -40,7 +40,7 @@ public class InventoryService {
 
     public InventoryResponse updatePrice(Long id, java.math.BigDecimal price) {
         Item item = itemRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Item not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Item not found: " + id));
         item.setSalePriceMxn(price);
         item.setUpdatedAt(java.time.LocalDateTime.now());
         return toResponse(itemRepository.save(item));

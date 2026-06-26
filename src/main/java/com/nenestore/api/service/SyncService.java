@@ -11,6 +11,7 @@ import com.nenestore.api.repository.SyncLogRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.nenestore.api.service.GenderTagger;
+import com.nenestore.api.exception.BadRequestException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -204,7 +205,7 @@ public class SyncService {
         } catch (Exception ignored) {
         }
 
-        throw new RuntimeException("Unparseable date: " + raw);
+        throw new BadRequestException("Unparseable date: " + raw);
     }
 
     public Map<String, Object> syncAll() throws Exception {

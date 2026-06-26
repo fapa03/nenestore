@@ -1,0 +1,17 @@
+info:
+  name: Test 1 — item not found (404)
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: http://localhost:8080/api/inventory
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhbnRvbmlvIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzgyNDMyNTEyLCJleHAiOjE3ODI1MTg5MTJ9.jvlmrzvEsrPxSXfwE9y-HKgnBFWxHpSztNOK02M3Ku_Sxjo9Wg0Xs6oIDBWBSzEq
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

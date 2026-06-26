@@ -1,0 +1,31 @@
+info:
+  name: Test 2 — item not available (409)
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: http://localhost:8080/api/sales
+  body:
+    type: json
+    data: |-
+      {
+        "clientId": 1,
+        "paymentType": "CASH",
+        "discountMxn": 0,
+        "items": [
+          {
+            "itemId": 1,
+            "priceMxn": 950.00
+          }
+        ]
+      }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhbnRvbmlvIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzgyNDMyNTEyLCJleHAiOjE3ODI1MTg5MTJ9.jvlmrzvEsrPxSXfwE9y-HKgnBFWxHpSztNOK02M3Ku_Sxjo9Wg0Xs6oIDBWBSzEq
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
