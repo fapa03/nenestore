@@ -1,0 +1,17 @@
+info:
+  name: Test 1 — full catalog (all items)
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: http://localhost:8080/api/catalog/pdf
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhbnRvbmlvIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzgyNTE2NTYzLCJleHAiOjE3ODI2MDI5NjN9.RC3fZ7yiDoWScBmqMMnuzLLLITdJZtV_YmjEWYhIBSSdScHGc_zycdCdkdCgHcSy
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
