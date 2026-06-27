@@ -1,12 +1,34 @@
-function App() {
+import { Routes, Route } from 'react-router-dom'
+import ProtectedRoute from './components/ProtectedRoute'
+import Layout from './components/Layout'
+import Login from './pages/Login'
+import Dashboard from './pages/Dashboard'
+import Inventory from './pages/Inventory'
+
+
+const Sales = () => <div className="text-brand-smoke text-2xl font-bold">Sales</div>
+const Credit = () => <div className="text-brand-smoke text-2xl font-bold">Credit Sales</div>
+const Clients = () => <div className="text-brand-smoke text-2xl font-bold">Clients</div>
+const Catalog = () => <div className="text-brand-smoke text-2xl font-bold">Catalog</div>
+const Sync = () => <div className="text-brand-smoke text-2xl font-bold">DB Update</div>
+
+export default function App() {
   return (
-    <div className="min-h-screen bg-brand-deep text-brand-smoke flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-brand-accent mb-4">Nenestore</h1>
-        <p className="text-brand-gray">Internal Operations Platform</p>
-      </div>
-    </div>
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/" element={
+        <ProtectedRoute>
+          <Layout />
+        </ProtectedRoute>
+      }>
+        <Route index element={<Dashboard />} />
+        <Route path="inventory" element={<Inventory />} />
+        <Route path="sales" element={<Sales />} />
+        <Route path="credit" element={<Credit />} />
+        <Route path="clients" element={<Clients />} />
+        <Route path="catalog" element={<Catalog />} />
+        <Route path="sync" element={<Sync />} />
+      </Route>
+    </Routes>
   )
 }
-
-export default App

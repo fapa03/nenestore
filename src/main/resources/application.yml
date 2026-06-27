@@ -30,4 +30,4 @@ google:
     credentials-file: classpath:sheetsCredentials.json
 
 storage:
-  images-path: ./images/items/
+  images-path: ./images/

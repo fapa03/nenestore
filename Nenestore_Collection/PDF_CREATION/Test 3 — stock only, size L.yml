@@ -5,10 +5,13 @@ info:
 
 http:
   method: GET
-  url: http://localhost:8080/api/catalog/pdf?gender=F
+  url: http://localhost:8080/api/catalog/pdf?status=Stock&size=L
   params:
-    - name: gender
-      value: F
+    - name: status
+      value: Stock
+      type: query
+    - name: size
+      value: L
       type: query
   auth:
     type: bearer
