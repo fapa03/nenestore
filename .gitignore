@@ -34,3 +34,6 @@ build/
 # Google credentials
 src/main/resources/sheetsCredentials.json
 images/
+node_modules/
+package.json
+package-lock.json
