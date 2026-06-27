@@ -4,11 +4,10 @@ import Layout from './components/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Inventory from './pages/Inventory'
+import CreditSales from './pages/CreditSales'
+import Clients from './pages/Clients'
+import Sales from './pages/Sales'
 
-
-const Sales = () => <div className="text-brand-smoke text-2xl font-bold">Sales</div>
-const Credit = () => <div className="text-brand-smoke text-2xl font-bold">Credit Sales</div>
-const Clients = () => <div className="text-brand-smoke text-2xl font-bold">Clients</div>
 const Catalog = () => <div className="text-brand-smoke text-2xl font-bold">Catalog</div>
 const Sync = () => <div className="text-brand-smoke text-2xl font-bold">DB Update</div>
 
@@ -24,10 +23,12 @@ export default function App() {
         <Route index element={<Dashboard />} />
         <Route path="inventory" element={<Inventory />} />
         <Route path="sales" element={<Sales />} />
-        <Route path="credit" element={<Credit />} />
+        <Route path="credit" element={<CreditSales />} />
         <Route path="clients" element={<Clients />} />
         <Route path="catalog" element={<Catalog />} />
         <Route path="sync" element={<Sync />} />
+        <Route path="clients" element={<Clients />} />
+
       </Route>
     </Routes>
   )

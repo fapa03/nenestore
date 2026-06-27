@@ -8,9 +8,9 @@ module.exports = {
       colors: {
         'brand-deep': '#1a0a2e',
         'brand-accent': '#7c3aed',
-        'brand-black': '#111111',
-        'brand-smoke': '#f5f5f5',
-        'brand-gray': '#3d3d3d',
+        'brand-black': '#1e1e2e',
+        'brand-smoke': '#e2e8f0',
+        'brand-gray': '#94a3b8',
       }
     },
   },
