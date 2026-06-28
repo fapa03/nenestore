@@ -7,9 +7,8 @@ import Inventory from './pages/Inventory'
 import CreditSales from './pages/CreditSales'
 import Clients from './pages/Clients'
 import Sales from './pages/Sales'
-
-const Catalog = () => <div className="text-brand-smoke text-2xl font-bold">Catalog</div>
-const Sync = () => <div className="text-brand-smoke text-2xl font-bold">DB Update</div>
+import Catalog from './pages/Catalog'
+import Sync from './pages/Sync'
 
 export default function App() {
   return (
@@ -28,6 +27,8 @@ export default function App() {
         <Route path="catalog" element={<Catalog />} />
         <Route path="sync" element={<Sync />} />
         <Route path="clients" element={<Clients />} />
+        <Route path="catalog" element={<Catalog />} />
+        <Route path="sync" element={<Sync />} />
 
       </Route>
     </Routes>

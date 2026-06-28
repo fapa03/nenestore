@@ -43,6 +43,8 @@ public class CatalogService {
     public byte[] generateCatalog(String gender, String status,
             String size, String search) throws Exception {
 
+        System.out.println("###### CATALOG IMAGES PATH: " + new java.io.File(imagesPath).getAbsolutePath());
+
         List<InventoryResponse> items = inventoryService.getInventory(search, status, gender, size);
 
         if (items.isEmpty()) {
@@ -107,7 +109,7 @@ public class CatalogService {
             Cell imageCell = new Cell().setBackgroundColor(rowBg).setPadding(4);
             try {
                 String imagePath = item.getImageUrl() != null
-                        ? item.getImageUrl().replace("/images/items/", "")
+                        ? item.getImageUrl().replace("/images/", "")
                         : null;
 
                 if (imagePath != null) {
