@@ -41,9 +41,13 @@ export default function Sidebar() {
                   border-r border-slate-200 dark:border-brand-gray/20 shrink-0">
 
             {/* Brand */}
-            <div className="px-6 py-6 border-b border-slate-200 dark:border-brand-gray/20">
-                <h1 className="text-brand-accent font-bold text-xl">Nenestore</h1>
-                <p className="text-slate-500 dark:text-brand-gray text-xs mt-0.5">{user}</p>
+            <div className="px-4 py-4 border-b border-brand-gray/20">
+                <img
+                    src="/LOGOTIPO_NENE.png"
+                    alt="Nenestore"
+                    className="w-full object-contain max-h-16"
+                />
+                <p className="text-brand-gray text-xs mt-2 px-1">{user}</p>
             </div>
 
             {/* Nav */}

@@ -1,0 +1,17 @@
+info:
+  name: Repair images
+  type: http
+  seq: 9
+
+http:
+  method: POST
+  url: http://localhost:8080/api/sync/repair-images
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhbnRvbmlvIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzgyNzE1NTAwLCJleHAiOjE3ODI4MDE5MDB9.l9jDJ8ru7s3XH-aOfUmG-9-J-aUCKQ5o-3ux_efil9X2XGiCw0GzmdEKRb-YQmY0
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

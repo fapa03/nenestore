@@ -30,4 +30,9 @@ public class SyncController {
     public Map<String, Object> syncAll() throws Exception {
         return syncService.syncAll();
     }
+
+    @PostMapping("/repair-images")
+    public Map<String, Object> repairImages() throws Exception {
+        return syncService.repairMissingImages();
+    }
 }

@@ -22,6 +22,12 @@ export default function Sales() {
     const [searching, setSearching] = useState(false)
     const [saving, setSaving] = useState(false)
 
+    const [showNewClient, setShowNewClient] = useState(false)
+    const [newClientForm, setNewClientForm] = useState({
+        name: '', whatsapp: '', instagram: '', level: 'NEW'
+    })
+    const [savingClient, setSavingClient] = useState(false)
+
     const fetchSales = () => {
         setLoading(true)
         api.get('/sales')
@@ -109,6 +115,24 @@ export default function Sales() {
         setItemSearch('')
         setSearchResults([])
     }
+    const handleCreateClient = async () => {
+        if (!newClientForm.name.trim()) return
+        setSavingClient(true)
+        try {
+            const res = await api.post('/clients', {
+                ...newClientForm,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            })
+            setSelectedClient(res.data)
+            setShowNewClient(false)
+            setNewClientForm({ name: '', whatsapp: '', instagram: '', level: 'NEW' })
+        } catch (err) {
+            alert(err.response?.data?.message || 'Error creating client')
+        } finally {
+            setSavingClient(false)
+        }
+    }
 
     return (
         <div className="space-y-6">
@@ -162,8 +186,8 @@ export default function Sales() {
                                 <td className="px-4 py-3">{sale.client?.name ?? '—'}</td>
                                 <td className="px-4 py-3">
                                     <span className={`px-2 py-0.5 rounded text-xs font-semibold ${sale.paymentType === 'CREDIT'
-                                            ? 'bg-yellow-500/20 text-yellow-400'
-                                            : 'bg-green-500/20 text-green-400'
+                                        ? 'bg-yellow-500/20 text-yellow-400'
+                                        : 'bg-green-500/20 text-green-400'
                                         }`}>
                                         {sale.paymentType}
                                     </span>
@@ -310,7 +334,7 @@ export default function Sales() {
                             </label>
                             {selectedClient ? (
                                 <div className="flex items-center justify-between bg-brand-deep
-                                rounded-lg px-3 py-2">
+                    rounded-lg px-3 py-2">
                                     <span className="text-brand-smoke text-sm">
                                         {selectedClient.name}
                                     </span>
@@ -320,39 +344,52 @@ export default function Sales() {
                                     </button>
                                 </div>
                             ) : (
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        value={clientSearch}
-                                        onChange={e => searchClients(e.target.value)}
-                                        placeholder="Search client by name or WhatsApp..."
-                                        className="w-full bg-brand-deep text-brand-smoke border
-                               border-brand-gray/30 rounded-lg px-3 py-2 text-sm
-                               focus:outline-none focus:border-brand-accent"
-                                    />
-                                    {clients.length > 0 && (
-                                        <div className="absolute top-full left-0 right-0 bg-brand-black
-                                    border border-brand-gray/20 rounded-lg mt-1
-                                    max-h-36 overflow-y-auto z-10">
-                                            {clients.map(c => (
-                                                <button key={c.id}
-                                                    onClick={() => {
-                                                        setSelectedClient(c)
-                                                        setClientSearch('')
-                                                        setClients([])
-                                                    }}
-                                                    className="w-full text-left px-3 py-2 text-sm text-brand-smoke
-                                     hover:bg-brand-deep transition-colors">
-                                                    {c.name}
-                                                    {c.whatsapp && (
-                                                        <span className="text-brand-gray text-xs ml-2">
-                                                            {c.whatsapp}
-                                                        </span>
-                                                    )}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <input
+                                            type="text"
+                                            value={clientSearch}
+                                            onChange={e => searchClients(e.target.value)}
+                                            placeholder="Search client by name or WhatsApp..."
+                                            className="w-full bg-brand-deep text-brand-smoke border
+                     border-brand-gray/30 rounded-lg px-3 py-2 text-sm
+                     focus:outline-none focus:border-brand-accent"
+                                        />
+                                        {clients.length > 0 && (
+                                            <div className="absolute top-full left-0 right-0 bg-brand-black
+                          border border-brand-gray/20 rounded-lg mt-1
+                          max-h-36 overflow-y-auto z-10">
+                                                {clients.map(c => (
+                                                    <button key={c.id}
+                                                        onClick={() => {
+                                                            setSelectedClient(c)
+                                                            setClientSearch('')
+                                                            setClients([])
+                                                        }}
+                                                        className="w-full text-left px-3 py-2 text-sm text-brand-smoke
+                           hover:bg-brand-deep transition-colors">
+                                                        {c.name}
+                                                        {c.whatsapp && (
+                                                            <span className="text-brand-gray text-xs ml-2">
+                                                                {c.whatsapp}
+                                                            </span>
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* ← New button */}
+                                    <button
+                                        onClick={() => setShowNewClient(true)}
+                                        className="flex items-center gap-1 bg-brand-accent/20 text-brand-accent
+                                        hover:bg-brand-accent/30 px-3 py-2 rounded-lg text-sm
+                                        transition-colors shrink-0"
+                                    >
+                                        <Plus size={14} />
+                                        New
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -443,6 +480,79 @@ export default function Sales() {
                            disabled:opacity-50"
                             >
                                 {saving ? 'Processing...' : `Confirm Sale · $${total.toFixed(2)}`}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* New Client Modal (inside sale flow) */}
+            {showNewClient && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60]">
+                    <div className="bg-brand-black rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+                        <div className="flex items-center justify-between mb-5">
+                            <h3 className="text-brand-smoke font-semibold">New Client</h3>
+                            <button
+                                onClick={() => setShowNewClient(false)}
+                                className="text-brand-gray hover:text-brand-smoke"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+
+                        <div className="space-y-3">
+                            {[
+                                { label: 'Name *', key: 'name', placeholder: 'Maria Garcia' },
+                                { label: 'WhatsApp', key: 'whatsapp', placeholder: '5215512345678' },
+                                { label: 'Instagram', key: 'instagram', placeholder: '@mariagarcia' },
+                            ].map(({ label, key, placeholder }) => (
+                                <div key={key}>
+                                    <label className="block text-brand-gray text-xs mb-1">{label}</label>
+                                    <input
+                                        type="text"
+                                        value={newClientForm[key]}
+                                        onChange={e => setNewClientForm({ ...newClientForm, [key]: e.target.value })}
+                                        placeholder={placeholder}
+                                        className="w-full bg-brand-deep text-brand-smoke border
+                         border-brand-gray/30 rounded-lg px-3 py-2 text-sm
+                         focus:outline-none focus:border-brand-accent"
+                                    />
+                                </div>
+                            ))}
+
+                            <div>
+                                <label className="block text-brand-gray text-xs mb-1">Level</label>
+                                <select
+                                    value={newClientForm.level}
+                                    onChange={e => setNewClientForm({ ...newClientForm, level: e.target.value })}
+                                    className="w-full bg-brand-deep text-brand-smoke border
+                       border-brand-gray/30 rounded-lg px-3 py-2 text-sm
+                       focus:outline-none focus:border-brand-accent"
+                                >
+                                    {['NEW', 'REGULAR', 'VIP', 'WHOLESALE'].map(l => (
+                                        <option key={l} value={l}>{l}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 mt-5">
+                            <button
+                                onClick={() => setShowNewClient(false)}
+                                className="flex-1 border border-brand-gray/30 text-brand-gray
+                     hover:text-brand-smoke py-2.5 rounded-lg text-sm
+                     transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleCreateClient}
+                                disabled={savingClient || !newClientForm.name.trim()}
+                                className="flex-1 bg-brand-accent hover:bg-purple-700 text-white
+                     py-2.5 rounded-lg text-sm font-semibold transition-colors
+                     disabled:opacity-50"
+                            >
+                                {savingClient ? 'Saving...' : 'Create & Select'}
                             </button>
                         </div>
                     </div>

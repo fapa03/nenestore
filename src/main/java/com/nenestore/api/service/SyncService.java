@@ -216,4 +216,57 @@ public class SyncService {
         return confirmSync(newOrders);
     }
 
+    public Map<String, Object> repairMissingImages() throws Exception {
+        // get all items with image_url but missing file on disk
+        List<Item> allItems = itemRepository.findAll();
+        List<Item> missingImages = allItems.stream()
+                .filter(i -> i.getImageUrl() != null)
+                .filter(i -> !imageService.imageExistsOnDisk(i.getImageUrl()))
+                .toList();
+
+        System.out.println("Items missing images: " + missingImages.size());
+
+        // get all sheet items to find original Shopify URLs
+        List<SheetItem> sheetItems = googleSheetsService.getItems();
+
+        int repaired = 0;
+        int failed = 0;
+
+        for (Item item : missingImages) {
+            // find matching sheet row by order_id + product name
+            String orderId = item.getOrder().getOrderId();
+            String product = item.getProduct();
+
+            SheetItem match = sheetItems.stream()
+                    .filter(si -> si.getOrderId().equals(orderId)
+                            && si.getProduct().equals(product))
+                    .findFirst()
+                    .orElse(null);
+
+            if (match == null || match.getImageUrl() == null
+                    || match.getImageUrl().isBlank()) {
+                System.out.println("No sheet match for: " + item.getSku());
+                failed++;
+                continue;
+            }
+
+            // re-download the image
+            String localPath = imageService.downloadImage(
+                    match.getImageUrl(), item.getSku());
+
+            if (localPath != null) {
+                System.out.println("Repaired: " + item.getSku());
+                repaired++;
+            } else {
+                System.out.println("Download failed: " + item.getSku());
+                failed++;
+            }
+        }
+
+        return Map.of(
+                "missing", missingImages.size(),
+                "repaired", repaired,
+                "failed", failed);
+    }
+
 }

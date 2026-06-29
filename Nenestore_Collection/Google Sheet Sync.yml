@@ -8,7 +8,7 @@ http:
   url: http://localhost:8080/api/sync/all
   auth:
     type: bearer
-    token: eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhbnRvbmlvIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzgxOTgyMTQ0LCJleHAiOjE3ODIwNjg1NDR9.8NxWv0n2dDid13VEUHMkjZptVUD-qzad7jHppIj3jCdV2pxhhrtRkiu3bFy4qrSg
+    token: eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhbnRvbmlvIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzgyNjMyMzAwLCJleHAiOjE3ODI3MTg3MDB9.R7H_5NRNa1Li2BSgzhL0NHvSkLgQJQ-Tbi_hQc6lMQfjBRXZlxEBoB3UBWUvylwv
 
 settings:
   encodeUrl: true
