@@ -27,7 +27,7 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
                         AND (COALESCE(:status, '') = '' OR i.status = :status)
                         AND (COALESCE(:gender, '') = '' OR i.gender = :gender)
                         AND (COALESCE(:size, '') = '' OR i.size = :size)
-                        ORDER BY i.id ASC
+                        ORDER BY i.createdAt DESC
                         """)
 
         List<Item> searchInventory(

@@ -10,6 +10,8 @@ import com.nenestore.api.repository.OrderRepository;
 import com.nenestore.api.repository.SyncLogRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
 import com.nenestore.api.service.GenderTagger;
 import com.nenestore.api.exception.BadRequestException;
 
@@ -267,6 +269,134 @@ public class SyncService {
                 "missing", missingImages.size(),
                 "repaired", repaired,
                 "failed", failed);
+    }
+
+    private void emit(SseEmitter emitter, String type, Object data) {
+        try {
+            emitter.send(SseEmitter.event()
+                    .name(type)
+                    .data(data));
+        } catch (Exception e) {
+            // client disconnected
+        }
+    }
+
+    public void syncWithProgress(SseEmitter emitter) {
+        try {
+            // STEP 1 — connect to Sheets
+            emit(emitter, "step", Map.of(
+                    "step", 1,
+                    "status", "running",
+                    "message", "Connecting to Google Sheets..."));
+
+            List<SheetOrder> allOrders = googleSheetsService.getOrders();
+            List<SheetItem> allItems = googleSheetsService.getItems();
+
+            emit(emitter, "step", Map.of(
+                    "step", 1,
+                    "status", "done",
+                    "message", "Connected to Google Sheets"));
+
+            // STEP 2 — scan for new orders
+            emit(emitter, "step", Map.of(
+                    "step", 2,
+                    "status", "running",
+                    "message", "Scanning for new orders..."));
+
+            List<SheetOrder> newOrders = allOrders.stream()
+                    .filter(o -> orderRepository.findByOrderId(o.getOrderNumber()).isEmpty())
+                    .toList();
+
+            if (newOrders.isEmpty()) {
+                emit(emitter, "step", Map.of(
+                        "step", 2,
+                        "status", "done",
+                        "message", "No new orders found — already up to date"));
+                emit(emitter, "complete", Map.of(
+                        "status", "UP_TO_DATE",
+                        "itemsProcessed", 0));
+                emitter.complete();
+                return;
+            }
+
+            emit(emitter, "step", Map.of(
+                    "step", 2,
+                    "status", "done",
+                    "message", "Detected " + newOrders.size() + " new order(s)"));
+
+            int totalProcessed = 0;
+
+            // STEP 3 — process each order
+            for (SheetOrder sheetOrder : newOrders) {
+                emit(emitter, "step", Map.of(
+                        "step", 3,
+                        "status", "running",
+                        "message", "Processing order: " + sheetOrder.getOrderNumber(),
+                        "detail", "$" + sheetOrder.getTotalPrice() + " USD"));
+
+                // collect items for this order
+                List<SheetItem> orderItems = allItems.stream()
+                        .filter(i -> i.getOrderId().equals(sheetOrder.getOrderNumber()))
+                        .toList();
+
+                // tag gender
+                List<Map<String, Object>> taggedItems = new ArrayList<>();
+                for (SheetItem si : orderItems) {
+                    String gender = genderTagger.tag(
+                            sheetOrder.getOrderNumber(), si.getProduct(), si.getSize());
+                    Map<String, Object> itemMap = new HashMap<>();
+                    itemMap.put("product", si.getProduct());
+                    itemMap.put("color", si.getColor());
+                    itemMap.put("size", si.getSize());
+                    itemMap.put("quantity", si.getQuantity());
+                    itemMap.put("purchasePriceUsd", si.getPurchasePriceUsd());
+                    itemMap.put("imageUrl", si.getImageUrl());
+                    itemMap.put("gender", gender);
+                    taggedItems.add(itemMap);
+                }
+
+                // STEP 4 — download images
+                emit(emitter, "step", Map.of(
+                        "step", 4,
+                        "status", "running",
+                        "message", "Downloading images for " + sheetOrder.getOrderNumber() + "..."));
+
+                // STEP 5 — insert to DB
+                emit(emitter, "step", Map.of(
+                        "step", 5,
+                        "status", "running",
+                        "message", "Inserting records into database..."));
+
+                // build confirm payload and process
+                Map<String, Object> orderData = new HashMap<>();
+                orderData.put("orderNumber", sheetOrder.getOrderNumber());
+                orderData.put("orderDate", sheetOrder.getOrderDate());
+                orderData.put("totalPrice", sheetOrder.getTotalPrice());
+                orderData.put("items", taggedItems);
+
+                Map<String, Object> result = confirmSync(List.of(orderData));
+                int processed = ((Number) result.get("itemsProcessed")).intValue();
+                totalProcessed += processed;
+
+                emit(emitter, "step", Map.of(
+                        "step", 5,
+                        "status", "done",
+                        "message", "Order " + sheetOrder.getOrderNumber() + " inserted",
+                        "detail", processed + " units"));
+            }
+
+            // STEP 6 — complete
+            emit(emitter, "complete", Map.of(
+                    "status", "SUCCESS",
+                    "itemsProcessed", totalProcessed));
+
+            emitter.complete();
+
+        } catch (Exception e) {
+            emit(emitter, "error", Map.of(
+                    "message", "Sync failed: " + e.getMessage()));
+            emitter.completeWithError(e);
+        }
     }
 
 }

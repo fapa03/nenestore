@@ -29,16 +29,18 @@ public class JwtFilter extends OncePerRequestFilter {
             FilterChain filterChain)
             throws ServletException, IOException {
 
+        // allow token via query param for SSE endpoints
+        String tokenParam = request.getParameter("token");
         String authHeader = request.getHeader("Authorization");
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
+        String token = null;
+        if (tokenParam != null && !tokenParam.isBlank()) {
+            token = tokenParam;
+        } else if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
         }
 
-        String token = authHeader.substring(7);
-
-        if (jwtService.isTokenValid(token)) {
+        if (token != null && jwtService.isTokenValid(token)) {
             String username = jwtService.extractUsername(token);
             String role = jwtService.extractRole(token);
 
