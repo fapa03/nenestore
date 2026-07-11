@@ -46,4 +46,9 @@ public class SyncController {
         return emitter;
     }
 
+    @PostMapping("/refresh")
+    public Map<String, Object> refreshDatabase() throws Exception {
+        return syncService.refreshDatabase();
+    }
+
 }

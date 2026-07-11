@@ -114,4 +114,34 @@ public class GoogleSheetsService {
             return 0;
         }
     }
+
+    public List<Map<String, String>> getItemPriceUpdates() throws IOException {
+        ValueRange response = sheetsService.spreadsheets().values()
+                .get(spreadsheetId, "items!A1:I")
+                .execute();
+
+        List<List<Object>> rows = response.getValues();
+        if (rows == null || rows.size() < 2)
+            return new ArrayList<>();
+
+        Map<String, Integer> colMap = buildColumnMap(rows.get(0));
+
+        List<Map<String, String>> updates = new ArrayList<>();
+        for (int i = 1; i < rows.size(); i++) {
+            List<Object> row = rows.get(i);
+            if (row.isEmpty())
+                continue;
+
+            Map<String, String> update = new HashMap<>();
+            update.put("orderId", str(row, colMap, "order_id"));
+            update.put("product", str(row, colMap, "product"));
+            update.put("color", str(row, colMap, "color"));
+            update.put("size", str(row, colMap, "size"));
+            update.put("stock", str(row, colMap, "stock"));
+            update.put("salePriceMxn", str(row, colMap, "sales_price_mxn"));
+            update.put("purchasePriceUsd", str(row, colMap, "purchase_price_usd"));
+            updates.add(update);
+        }
+        return updates;
+    }
 }

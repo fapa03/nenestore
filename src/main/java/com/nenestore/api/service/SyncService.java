@@ -31,6 +31,7 @@ public class SyncService {
     private final SkuService skuService;
     private final ImageService imageService;
     private final GenderTagger genderTagger;
+    private final SizeNormalizer sizeNormalizer;
 
     public SyncService(GoogleSheetsService googleSheetsService,
             OrderRepository orderRepository,
@@ -38,7 +39,8 @@ public class SyncService {
             SyncLogRepository syncLogRepository,
             SkuService skuService,
             ImageService imageService,
-            GenderTagger genderTagger) {
+            GenderTagger genderTagger,
+            SizeNormalizer sizeNormalizer) {
         this.googleSheetsService = googleSheetsService;
         this.orderRepository = orderRepository;
         this.itemRepository = itemRepository;
@@ -46,6 +48,7 @@ public class SyncService {
         this.skuService = skuService;
         this.imageService = imageService;
         this.genderTagger = genderTagger;
+        this.sizeNormalizer = sizeNormalizer;
     }
 
     // ── STEP 1+2: Read sheets and filter new orders ──────────────────────────
@@ -397,6 +400,107 @@ public class SyncService {
                     "message", "Sync failed: " + e.getMessage()));
             emitter.completeWithError(e);
         }
+    }
+
+    @Transactional
+    public Map<String, Object> refreshDatabase() throws Exception {
+        List<Map<String, String>> sheetRows = googleSheetsService.getItemPriceUpdates();
+
+        int matched = 0;
+        int updated = 0;
+        int skipped = 0;
+        int notFound = 0;
+
+        for (Map<String, String> row : sheetRows) {
+            String orderId = row.get("orderId");
+            String product = row.get("product");
+            String color = row.get("color");
+            String sheetSize = sizeNormalizer.normalize(row.get("size"));
+            String stock = row.get("stock");
+            String priceStr = row.get("salePriceMxn");
+            String purchaseStr = row.get("purchasePriceUsd");
+
+            if (orderId.isBlank() || product.isBlank()) {
+                skipped++;
+                continue;
+            }
+
+            // find candidates by order + product + color
+            List<Item> candidates = itemRepository
+                    .findByOrderProductColor(orderId, product, color);
+
+            if (candidates.isEmpty()) {
+                notFound++;
+                continue;
+            }
+
+            // filter by normalized size
+            List<Item> matches = candidates.stream()
+                    .filter(i -> sizeNormalizer.normalize(i.getSize()).equals(sheetSize))
+                    .toList();
+
+            if (matches.isEmpty()) {
+                notFound++;
+                continue;
+            }
+
+            matched += matches.size();
+
+            for (Item item : matches) {
+                boolean changed = false;
+
+                // status
+                if (stock != null && !stock.isBlank()) {
+                    String newStatus = stock.equalsIgnoreCase("Vendido")
+                            ? "Unavailable"
+                            : "Stock";
+                    if (!newStatus.equals(item.getStatus())) {
+                        item.setStatus(newStatus);
+                        changed = true;
+                    }
+                }
+
+                // sale price
+                if (priceStr != null && !priceStr.isBlank()) {
+                    try {
+                        BigDecimal price = new BigDecimal(priceStr);
+                        if (item.getSalePriceMxn() == null ||
+                                price.compareTo(item.getSalePriceMxn()) != 0) {
+                            item.setSalePriceMxn(price);
+                            changed = true;
+                        }
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+
+                // purchase price
+                if (purchaseStr != null && !purchaseStr.isBlank()) {
+                    try {
+                        BigDecimal purchase = new BigDecimal(purchaseStr);
+                        if (purchase.compareTo(item.getPurchasePriceUsd()) != 0) {
+                            item.setPurchasePriceUsd(purchase);
+                            changed = true;
+                        }
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+
+                if (changed) {
+                    item.setUpdatedAt(LocalDateTime.now());
+                    itemRepository.save(item);
+                    updated++;
+                } else {
+                    skipped++;
+                }
+            }
+        }
+
+        return Map.of(
+                "rowsRead", sheetRows.size(),
+                "matched", matched,
+                "updated", updated,
+                "skipped", skipped,
+                "notFound", notFound);
     }
 
 }

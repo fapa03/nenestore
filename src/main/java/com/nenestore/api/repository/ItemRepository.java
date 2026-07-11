@@ -45,4 +45,17 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
         @Query("SELECT SUM(i.purchasePriceUsd) FROM Item i WHERE i.deletedAt IS NULL")
         BigDecimal sumPurchaseValue();
 
+        @Query("""
+                        SELECT i FROM Item i
+                        JOIN i.order o
+                        WHERE o.orderId = :orderId
+                        AND i.product = :product
+                        AND i.color = :color
+                        AND i.deletedAt IS NULL
+                        """)
+        List<Item> findByOrderProductColor(
+                        @Param("orderId") String orderId,
+                        @Param("product") String product,
+                        @Param("color") String color);
+
 }

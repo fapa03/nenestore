@@ -9,6 +9,7 @@ const STEPS = [
     { id: 5, label: 'Insert into database' },
 ]
 
+
 function StepRow({ step, status, message, detail }) {
     return (
         <div className="flex items-start gap-3 py-2">
@@ -31,9 +32,9 @@ function StepRow({ step, status, message, detail }) {
             {/* Text */}
             <div className="flex-1 min-w-0">
                 <p className={`text-sm ${status === 'done' ? 'text-brand-smoke' :
-                        status === 'running' ? 'text-brand-accent font-semibold' :
-                            status === 'error' ? 'text-red-400' :
-                                'text-brand-gray/50'
+                    status === 'running' ? 'text-brand-accent font-semibold' :
+                        status === 'error' ? 'text-red-400' :
+                            'text-brand-gray/50'
                     }`}>
                     {message || step.label}
                 </p>
@@ -51,6 +52,9 @@ export default function Sync() {
     const [complete, setComplete] = useState(null)
     const [error, setError] = useState(null)
     const eventSourceRef = useRef(null)
+
+    const [refreshing, setRefreshing] = useState(false)
+    const [refreshResult, setRefreshResult] = useState(null)
 
     const updateStep = (stepData) => {
         setSteps(prev => {
@@ -104,6 +108,22 @@ export default function Sync() {
         })
     }
 
+
+    const runRefresh = async () => {
+        setRefreshing(true)
+        setRefreshResult(null)
+        try {
+            const res = await api.post('/sync/refresh', {}, { timeout: 120000 })
+            setRefreshResult(res.data)
+        } catch (err) {
+            setRefreshResult({
+                error: err.response?.data?.message || 'Refresh failed'
+            })
+        } finally {
+            setRefreshing(false)
+        }
+    }
+
     return (
         <div className="space-y-6">
             <h1 className="text-brand-smoke text-2xl font-bold">Database Update</h1>
@@ -118,8 +138,8 @@ export default function Sync() {
                     onClick={runSync}
                     disabled={running}
                     className="w-full flex items-center justify-center gap-2 bg-brand-accent
-                     hover:bg-purple-700 text-white py-3 rounded-lg text-sm
-                     font-semibold transition-colors disabled:opacity-50 mb-6"
+                 hover:bg-purple-700 text-white py-3 rounded-lg text-sm
+                 font-semibold transition-colors disabled:opacity-50 mb-6"
                 >
                     <RefreshCw size={16} className={running ? 'animate-spin' : ''} />
                     {running ? 'Syncing...' : 'Sync Now'}
@@ -143,8 +163,8 @@ export default function Sync() {
                 {/* Complete */}
                 {complete && (
                     <div className={`mt-4 rounded-lg p-4 flex items-start gap-3 ${complete.status === 'SUCCESS' || complete.status === 'UP_TO_DATE'
-                            ? 'bg-green-500/10 border border-green-500/20'
-                            : 'bg-red-500/10 border border-red-500/20'
+                        ? 'bg-green-500/10 border border-green-500/20'
+                        : 'bg-red-500/10 border border-red-500/20'
                         }`}>
                         <CheckCircle size={18} className="text-green-400 shrink-0 mt-0.5" />
                         <div>
@@ -163,7 +183,7 @@ export default function Sync() {
                 {/* Error */}
                 {error && (
                     <div className="mt-4 rounded-lg p-4 flex items-start gap-3
-                          bg-red-500/10 border border-red-500/20">
+                      bg-red-500/10 border border-red-500/20">
                         <AlertCircle size={18} className="text-red-400 shrink-0 mt-0.5" />
                         <div>
                             <p className="text-red-400 font-semibold text-sm">Sync failed</p>
@@ -171,7 +191,68 @@ export default function Sync() {
                         </div>
                     </div>
                 )}
+
+                {/* ── Divider ── */}
+                <div className="border-t border-brand-gray/20 my-6" />
+
+                {/* ── Database Refresh ── */}
+                <div>
+                    <h3 className="text-brand-smoke font-semibold text-sm mb-1">
+                        Database Refresh
+                    </h3>
+                    <p className="text-brand-gray text-xs mb-4">
+                        Updates existing items with current prices and stock status from
+                        Google Sheets. Only modifies records that have changed — never
+                        creates new ones.
+                    </p>
+
+                    <button
+                        onClick={runRefresh}
+                        disabled={refreshing}
+                        className="w-full flex items-center justify-center gap-2
+                               border border-brand-accent text-brand-accent
+                               hover:bg-brand-accent hover:text-white py-3 rounded-lg
+                               text-sm font-semibold transition-colors disabled:opacity-50"
+                    >
+                        <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+                        {refreshing ? 'Refreshing...' : 'Database Refresh'}
+                    </button>
+
+                    {refreshResult && !refreshResult.error && (
+                        <div className="mt-3 rounded-lg p-4 bg-green-500/10
+                                    border border-green-500/20">
+                            <p className="text-green-400 font-semibold text-sm mb-2">
+                                Refresh completed
+                            </p>
+                            <div className="text-brand-gray text-xs space-y-0.5">
+                                <p>Rows read from Sheet: <span className="text-brand-smoke">
+                                    {refreshResult.rowsRead}</span></p>
+                                <p>Items matched: <span className="text-brand-smoke">
+                                    {refreshResult.matched}</span></p>
+                                <p>Items updated: <span className="text-green-400">
+                                    {refreshResult.updated}</span></p>
+                                <p>No changes needed: <span className="text-brand-smoke">
+                                    {refreshResult.skipped}</span></p>
+                                <p>Not found in DB: <span className="text-yellow-400">
+                                    {refreshResult.notFound}</span></p>
+                            </div>
+                        </div>
+                    )}
+
+                    {refreshResult?.error && (
+                        <div className="mt-3 rounded-lg p-4 bg-red-500/10
+                                    border border-red-500/20">
+                            <p className="text-red-400 font-semibold text-sm">
+                                {refreshResult.error}
+                            </p>
+                        </div>
+                    )}
+                </div>
+
             </div>
         </div>
     )
 }
+
+
+

@@ -1,0 +1,17 @@
+info:
+  name: temporary
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: http://localhost:8080/api/sync/refresh
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhbnRvbmlvIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzgzNzA1NjIxLCJleHAiOjE3ODM3OTIwMjF9.q85BsFSrF8O4c5mHf76H2rZ1_371pFB353zZ-UiYfVhdd1Myebpqifk__eDoQh9K
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
