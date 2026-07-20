@@ -2,6 +2,79 @@ import { useEffect, useState } from 'react'
 import api from '../services/api'
 import { CreditCard, Plus } from 'lucide-react'
 
+const buildWhatsAppSummary = (credit) => {
+    const clientName = credit.client?.name ?? 'Cliente'
+    const payments = credit.payments ?? []
+
+    const formatDate = (dateStr) => {
+        const date = new Date(dateStr + 'T00:00:00')
+        return date.toLocaleDateString('es-MX', {
+            day: 'numeric',
+            month: 'short'
+        })
+    }
+
+    const fmt = (n) => `$${parseFloat(n).toLocaleString('es-MX')}`
+
+    let text = `*${clientName}*\n`
+
+    if (payments.length > 0) {
+        text += `\n*Abonos:*\n`
+        payments.forEach(p => {
+            text += `${formatDate(p.date)}   ${fmt(p.amount)}`
+            if (p.notes) text += ` _(${p.notes})_`
+            text += `\n`
+        })
+    } else {
+        text += `\n_Sin abonos registrados_\n`
+    }
+
+    text += `\n———————————\n`
+    text += `*Relación:*\n`
+    text += `${fmt(credit.paidAmount)} abonado\n`
+    text += `${fmt(credit.originalDebt)} deuda total\n`
+    text += `———————————\n`
+    text += `*Total:*\n`
+    text += `> Restan *${fmt(credit.balance)}*`
+
+    return text
+}
+
+function CopyButton({ credit }) {
+    const [copied, setCopied] = useState(false)
+
+    const handleCopy = async () => {
+        const text = buildWhatsAppSummary(credit)
+        try {
+            await navigator.clipboard.writeText(text)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+        } catch {
+            const el = document.createElement('textarea')
+            el.value = text
+            document.body.appendChild(el)
+            el.select()
+            document.execCommand('copy')
+            document.body.removeChild(el)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+        }
+    }
+
+    return (
+        <button
+            onClick={handleCopy}
+            className={`flex items-center gap-1 text-xs px-3 py-1 rounded-lg
+                        transition-colors ${copied
+                    ? 'bg-green-500/20 text-green-400'
+                    : 'bg-brand-gray/20 text-brand-gray hover:text-brand-smoke hover:bg-brand-gray/30'
+                }`}
+        >
+            {copied ? '✓ Copiado' : '📋 Copiar'}
+        </button>
+    )
+}
+
 export default function CreditSales() {
     const [credits, setCredits] = useState([])
     const [loading, setLoading] = useState(true)
@@ -46,33 +119,33 @@ export default function CreditSales() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-brand-smoke text-2xl font-bold">Credit Sales</h1>
+            <h1 className="text-brand-smoke text-2xl font-bold">Ventas a Crédito</h1>
 
             {/* Table */}
             <div className="bg-brand-black rounded-xl overflow-hidden">
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="text-brand-gray border-b border-brand-gray/20 text-xs uppercase">
-                            <th className="text-left px-4 py-3">Client</th>
-                            <th className="text-left px-4 py-3">Date</th>
-                            <th className="text-right px-4 py-3">Original Debt</th>
-                            <th className="text-right px-4 py-3">Paid</th>
-                            <th className="text-right px-4 py-3">Balance</th>
-                            <th className="text-left px-4 py-3">Status</th>
-                            <th className="text-left px-4 py-3">Action</th>
+                            <th className="text-left px-4 py-3">Cliente</th>
+                            <th className="text-left px-4 py-3">Fecha</th>
+                            <th className="text-right px-4 py-3">Deuda Original</th>
+                            <th className="text-right px-4 py-3">Abonado</th>
+                            <th className="text-right px-4 py-3">Restante</th>
+                            <th className="text-left px-4 py-3">Estado</th>
+                            <th className="text-left px-4 py-3">Acciones</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-brand-gray/10">
                         {loading ? (
                             <tr>
                                 <td colSpan={7} className="text-center py-8 text-brand-gray">
-                                    Loading...
+                                    Cargando...
                                 </td>
                             </tr>
                         ) : credits.length === 0 ? (
                             <tr>
                                 <td colSpan={7} className="text-center py-8 text-brand-gray">
-                                    No open credit sales
+                                    Sin ventas a crédito abiertas
                                 </td>
                             </tr>
                         ) : credits.map(credit => (
@@ -96,22 +169,25 @@ export default function CreditSales() {
                                 </td>
                                 <td className="px-4 py-3">
                                     <span className={`px-2 py-0.5 rounded text-xs font-semibold
-                                   ${statusColor(credit.status)}`}>
+                                        ${statusColor(credit.status)}`}>
                                         {credit.status}
                                     </span>
                                 </td>
                                 <td className="px-4 py-3">
-                                    {credit.status !== 'PAID' && (
-                                        <button
-                                            onClick={() => setSelected(credit)}
-                                            className="flex items-center gap-1 text-xs bg-brand-accent/20
-                                 text-brand-accent hover:bg-brand-accent/30 px-3 py-1
-                                 rounded-lg transition-colors"
-                                        >
-                                            <Plus size={12} />
-                                            Payment
-                                        </button>
-                                    )}
+                                    <div className="flex items-center gap-2">
+                                        {credit.status !== 'PAID' && (
+                                            <button
+                                                onClick={() => setSelected(credit)}
+                                                className="flex items-center gap-1 text-xs bg-brand-accent/20
+                                                           text-brand-accent hover:bg-brand-accent/30 px-3 py-1
+                                                           rounded-lg transition-colors"
+                                            >
+                                                <Plus size={12} />
+                                                Abono
+                                            </button>
+                                        )}
+                                        <CopyButton credit={credit} />
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -126,30 +202,30 @@ export default function CreditSales() {
                         <div className="flex items-center gap-3 mb-6">
                             <CreditCard size={20} className="text-brand-accent" />
                             <h2 className="text-brand-smoke font-semibold text-lg">
-                                Register Payment
+                                Registrar Abono
                             </h2>
                         </div>
 
                         {/* Summary */}
                         <div className="bg-brand-deep rounded-lg p-4 mb-4 space-y-1 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-brand-gray">Client</span>
+                                <span className="text-brand-gray">Cliente</span>
                                 <span className="text-brand-smoke">{selected.client?.name}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-brand-gray">Original debt</span>
+                                <span className="text-brand-gray">Deuda original</span>
                                 <span className="text-brand-smoke">
                                     ${selected.originalDebt?.toFixed(2)}
                                 </span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-brand-gray">Already paid</span>
+                                <span className="text-brand-gray">Ya abonado</span>
                                 <span className="text-green-400">
                                     ${selected.paidAmount?.toFixed(2)}
                                 </span>
                             </div>
                             <div className="flex justify-between font-bold">
-                                <span className="text-brand-gray">Remaining</span>
+                                <span className="text-brand-gray">Restante</span>
                                 <span className="text-brand-accent">
                                     ${selected.balance?.toFixed(2)}
                                 </span>
@@ -160,7 +236,7 @@ export default function CreditSales() {
                         <div className="space-y-3">
                             <div>
                                 <label className="block text-brand-gray text-sm mb-1">
-                                    Payment amount (MXN)
+                                    Monto del abono (MXN)
                                 </label>
                                 <input
                                     type="number"
@@ -168,23 +244,23 @@ export default function CreditSales() {
                                     onChange={e => setPaymentAmount(e.target.value)}
                                     placeholder="0.00"
                                     className="w-full bg-brand-deep text-brand-smoke border
-                             border-brand-gray/30 rounded-lg px-4 py-2.5 text-sm
-                             focus:outline-none focus:border-brand-accent"
+                                               border-brand-gray/30 rounded-lg px-4 py-2.5 text-sm
+                                               focus:outline-none focus:border-brand-accent"
                                     autoFocus
                                 />
                             </div>
                             <div>
                                 <label className="block text-brand-gray text-sm mb-1">
-                                    Notes (optional)
+                                    Notas (opcional)
                                 </label>
                                 <input
                                     type="text"
                                     value={paymentNotes}
                                     onChange={e => setPaymentNotes(e.target.value)}
-                                    placeholder="e.g. bank transfer"
+                                    placeholder="ej. transferencia bancaria"
                                     className="w-full bg-brand-deep text-brand-smoke border
-                             border-brand-gray/30 rounded-lg px-4 py-2.5 text-sm
-                             focus:outline-none focus:border-brand-accent"
+                                               border-brand-gray/30 rounded-lg px-4 py-2.5 text-sm
+                                               focus:outline-none focus:border-brand-accent"
                                 />
                             </div>
                         </div>
@@ -198,19 +274,19 @@ export default function CreditSales() {
                                     setPaymentNotes('')
                                 }}
                                 className="flex-1 border border-brand-gray/30 text-brand-gray
-                           hover:text-brand-smoke py-2.5 rounded-lg text-sm
-                           transition-colors"
+                                           hover:text-brand-smoke py-2.5 rounded-lg text-sm
+                                           transition-colors"
                             >
-                                Cancel
+                                Cancelar
                             </button>
                             <button
                                 onClick={registerPayment}
                                 disabled={saving || !paymentAmount}
                                 className="flex-1 bg-brand-accent hover:bg-purple-700 text-white
-                           py-2.5 rounded-lg text-sm font-semibold transition-colors
-                           disabled:opacity-50"
+                                           py-2.5 rounded-lg text-sm font-semibold transition-colors
+                                           disabled:opacity-50"
                             >
-                                {saving ? 'Saving...' : 'Confirm Payment'}
+                                {saving ? 'Guardando...' : 'Confirmar Abono'}
                             </button>
                         </div>
                     </div>
