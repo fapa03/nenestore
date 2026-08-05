@@ -1,159 +1,193 @@
-# Nenestore API — Executive Handoff Summary
+# Nenestore — Executive Handoff Summary
 
-**Date:** June 2026  
-**Stack:** Java 21 + Spring Boot 3.5.14 + PostgreSQL 16 + Docker  
-**Repo branch:** `dev`  
-**Developer level:** Junior Java developer — learning through the project
+**Version:** 2.0  
+**Date:** July 2026  
+**Stack:** Java 21 + Spring Boot 3.5.14 + React 18 + PostgreSQL 16 + Docker  
+**Repo:** https://github.com/fapa03/nenestore  
+**Active branch:** `dev` (merged to `main` periodically)  
+**Status:** v1.0 complete — all core features operational
 
 ---
 
-## 1. What We Are Building
+## 1. What This System Is
 
-**Nenestore** is an internal operations platform for a small clothing resale business. It is NOT a public e-commerce store — Shopify handles that. This system manages:
+**Nenestore** is an internal operations platform for a small clothing resale business. NOT a public storefront (Shopify handles that). This system manages:
 
-- **Inventory** — individual physical clothing units, each with a unique SKU
-- **Sales** — cash and credit sales linked to clients
-- **Client CRM** — lightweight customer tracking (name, WhatsApp, Instagram, level)
-- **Google Sheets Sync** — the owner scrapes orders from supplier websites (YoungLA, Gymshark) using a Python/Playwright script that writes to Google Sheets. This Java backend reads that Sheet and imports data into PostgreSQL
-- **PDF Catalog** — filterable product catalog for sharing with clients
-- **Dashboard** — inventory stats, monthly sales, recent orders
+- Inventory of individual physical units imported from US suppliers (YoungLA, Gymshark)
+- Sales tracking (cash and credit) linked to clients
+- Lightweight CRM (WhatsApp, Instagram, loyalty level)
+- PDF catalog generation for clients
+- Google Sheets sync pipeline (the bridge between a Python scraper and the DB)
 
 ### Business Data Flow
 ```
-Gymshark/YoungLA website
-    ↓ (Python + Playwright scraper — manual, monthly)
-Google Sheets (staging area)
-    ↓ (Java sync pipeline — manual trigger or scheduled)
-PostgreSQL (source of truth)
+YoungLA / Gymshark website
+    ↓ Python + Playwright scraper (manual, ~monthly) — EXTERNAL, not part of this repo
+Google Sheets (staging area — source of truth for raw import data)
+    ↓ POST /api/sync/all  (SSE real-time progress)
+    ↓ POST /api/sync/refresh  (bulk update prices + status)
+PostgreSQL (operational database — source of truth for app state)
     ↓
-React Frontend (not built yet)
-```
-
-### SKU Format
-```
-[order_id]-[unit_index]
-Example: YLA7845573-001, YLA7845573-002
-```
-One SKU = one physical unit. A row with quantity=3 generates 3 SKUs.
-
-### Gender Auto-tagging Logic
-```
-size == 'N/A' → U (accessory)
-YoungLA (order_id starts with YLA):
-    product starts with 'W' → F, else → M
-Gymshark (order_id starts with US):
-    keyword match (leggings, bra, crop → F) (jogger, hoodie, tee → M)
-    no match → U
+React Frontend → http://localhost:5173
 ```
 
 ---
 
-## 2. Project Structure
+## 2. Complete Feature Inventory
 
-```
-com.nenestore.api
-├── controller
-│   ├── AuthController.java        POST /api/auth/login, /register
-│   ├── HealthController.java      GET /api/health, /sheets-test
-│   ├── OrderController.java       GET /api/orders
-│   └── SyncController.java        GET /api/sync/preview, POST /api/sync/confirm, /api/sync/all
-├── service
-│   ├── AuthService.java           register + login logic, BCrypt
-│   ├── GenderTagger.java          auto-tags gender from order_id + product + size
-│   ├── GoogleSheetsService.java   reads orders and items sheets
-│   ├── ImageService.java          downloads Shopify images to local filesystem
-│   ├── JwtService.java            generates and validates JWT tokens
-│   ├── OrderService.java          getAllOrders()
-│   ├── SkuService.java            generates SKUs, queries max unit index
-│   └── SyncService.java           orchestrates full pipeline (preview + confirm + syncAll)
-├── repository
-│   ├── ItemRepository.java        + custom query: findMaxUnitIndexByOrderId
-│   ├── OrderRepository.java       + findByOrderId
-│   ├── SyncLogRepository.java
-│   └── UserRepository.java        + findByUsername
-├── entity
-│   ├── Item.java                  maps to items table
-│   ├── Order.java                 maps to orders table
-│   ├── SyncLog.java               maps to sync_log table
-│   └── User.java                  maps to users table
-├── dto
-│   ├── SheetItem.java             data carrier from Google Sheets items tab
-│   └── SheetOrder.java            data carrier from Google Sheets orders tab
-├── security
-│   ├── JwtFilter.java             intercepts requests, validates Bearer token
-│   └── SecurityConfig.java        deny-by-default, permits /api/auth/**, adds JwtFilter
-└── config
-    ├── GoogleSheetsConfig.java    creates Sheets bean from credentials file
-    └── WebConfig.java             serves /images/** from local filesystem
-```
+### Backend — ALL BUILT ✅
+
+| Endpoint | Description |
+|---|---|
+| POST `/api/auth/register` | Create user + JWT |
+| POST `/api/auth/login` | Login + JWT |
+| GET `/api/inventory` | Search/filter items (SKU, product, order, gender, status, size) |
+| PATCH `/api/inventory/{id}/status` | Toggle Stock/Unavailable |
+| PATCH `/api/inventory/{id}/price` | Set sale_price_mxn |
+| GET `/api/dashboard/stats` | totalStock, totalSold, totalPurchaseValueUsd |
+| GET `/api/dashboard/orders` | Last N orders |
+| GET `/api/sync/preview` | Preview new Sheet orders |
+| POST `/api/sync/confirm` | Import specific orders |
+| POST `/api/sync/all` | One-shot full import |
+| GET `/api/sync/stream` | SSE real-time progress (token via query param) |
+| POST `/api/sync/refresh` | Bulk update prices + status from Sheets |
+| POST `/api/sync/repair-images` | Re-download missing local images |
+| GET `/api/clients` | List + search |
+| POST `/api/clients` | Create |
+| PUT `/api/clients/{id}` | Update |
+| GET `/api/sales` | List all sales with items |
+| POST `/api/sales` | Register cash or credit sale |
+| GET `/api/sales/credit` | Open credit sales with payment history |
+| POST `/api/sales/credit/{id}/payments` | Register payment |
+| GET `/api/catalog/pdf` | Generate filtered PDF with images |
+
+### Frontend — ALL BUILT ✅
+
+| Page | Key Features |
+|---|---|
+| Login | JWT auth, redirect to dashboard |
+| Dashboard | Stats cards, recent orders table |
+| Inventory | Search, filter, image thumbnails, inline price edit, status toggle, CSV/JSON export |
+| Sales | History table, new sale modal (cart, client search, discount, cash/credit), inline client creation |
+| Credit Sales | Open debts table, payment modal, 📋 WhatsApp debt summary clipboard (Spanish) |
+| Clients | CRUD, search, Instagram clickable link, level badge |
+| Catalog | Filter form, PDF download |
+| DB Update | SSE sync pipeline with step-by-step progress, Database Refresh button |
+| Sidebar | All nav links, dark/light mode toggle, logout |
 
 ---
 
-## 3. Database Schema
+## 3. Architecture — Critical Rules
 
-### Flyway Migrations
+### Layered architecture (never break this)
 ```
-V1__init_schema.sql         → orders, items, users, sync_log + indexes
+Controller → Service → Repository → Entity
+```
+No business logic in controllers. No DB calls in controllers. No cross-layer imports in wrong direction.
+
+### SKU system (immutable)
+```
+Format: [order_id]-[unit_index]
+Example: YLA7845573-001
+Rules:
+- unit_index always 3 digits zero-padded
+- counter continuous across all products in same order
+- driven by quantity field (1 row → N SKUs)
+- re-import safe: queries MAX(unit_index) before generating
+- NEVER modified after creation
+```
+
+### Google Sheets column mapping
+```java
+// ALWAYS by column name, NEVER by index position
+Map<String, Integer> colMap = buildColumnMap(rows.get(0));
+str(row, colMap, "column_name")
+```
+
+**Items sheet exact column names:**
+```
+order_id | product | image_url | quantity | size | color | purchase_price_usd | stock | sales_price_mxn
+```
+⚠️ `stock` = `Stock` or `Vendido` (Vendido → `Unavailable` in DB)
+⚠️ `sales_price_mxn` — has an **s** (caused a bug, be careful)
+
+### Gender auto-tagging (GenderTagger.java)
+```
+size == '' or 'N/A' → U (accessory, no size = not clothing)
+YLA orders: product starts with 'W' → F, else → M
+US orders:  keyword dict (leggings/bra/crop → F, jogger/hoodie/tee → M), else → U
+Values: M / F / U only
+```
+
+### Size normalization (SizeNormalizer.java)
+Used in Database Refresh matching: `XLarge → XL`, `Large → L`, etc.
+Match key for refresh: `order_id + product + color + normalized_size`
+
+### Sync vs Refresh — critical distinction
+```
+POST /api/sync/all      → INSERT only, skips existing orders, never touches existing records
+POST /api/sync/refresh  → UPDATE only, matches existing items, never creates new records
+```
+
+### Image storage
+```
+Download source:  Shopify CDN URL (from Google Sheets)
+Stored at:        ./images/items/SKU.jpg  (relative to project root)
+DB stores:        /images/items/SKU.jpg  (URL path)
+Served at:        http://localhost:8080/images/items/SKU.jpg
+Spring config:    storage.images-path = ./images/
+WebConfig maps:   /images/** → file:./images/
+Security:         /images/** is permitAll() in SecurityConfig
+```
+
+### SSE endpoint (sync/stream)
+EventSource doesn't support custom headers — JWT token passed as query param `?token=...`. JwtFilter handles both `Authorization: Bearer` header AND `?token` query param.
+
+### Soft deletes
+`deleted_at` column on `orders` and `items`. All queries must include `WHERE deleted_at IS NULL`. Never hard-delete inventory records.
+
+---
+
+## 4. Database Schema
+
+### Flyway migrations applied
+```
+V1__init_schema.sql         → orders, items, users, sync_log
 V2__clients_and_sales.sql   → clients, sales, sale_items, credit_sales, payments
 V3__add_barcode_to_items    → ALTER TABLE items ADD COLUMN barcode VARCHAR(50)
 ```
 
-### Key Tables
-
-```sql
-orders      → id, order_id (YLA/US prefix), order_date, total_price, total_items
-items       → id, order_id(FK), sku, product, color, size, gender, status,
-              purchase_price_usd, sale_price_mxn, selled_price_mxn,
-              image_url, barcode, created_at, updated_at, deleted_at
-users       → id, username, password(BCrypt), role(ADMIN/EMPLOYEE), created_at
-sync_log    → id, triggered_by(FK users), started_at, finished_at,
-              rows_processed, status(SUCCESS/PARTIAL/FAILED), error_msg
-clients     → id, name, whatsapp, email, instagram, level(NEW/REGULAR/VIP/WHOLESALE), notes
-sales       → id, client_id(FK), sale_date, payment_type(CASH/CREDIT),
-              discount_mxn, total_mxn, notes
-sale_items  → id, sale_id(FK), item_id(FK), price_mxn
-credit_sales→ id, sale_id(FK UNIQUE), original_debt, paid_amount, balance,
-              status(PENDING/PARTIAL/PAID)
-payments    → id, credit_sale_id(FK), amount, payment_date, notes
+### Enum-like field values (enforced in code, not DB constraints)
+```
+items.status:         Stock | Unavailable
+items.gender:         M | F | U
+credit_sales.status:  PENDING | PARTIAL | PAID
+clients.level:        NEW | REGULAR | VIP | WHOLESALE
+users.role:           ADMIN | EMPLOYEE
 ```
 
-### Item Status Values
+### Price fields on items (all three matter)
 ```
-Stock       → available for sale
-Unavailable → sold or removed
-```
-
-### Item Gender Values
-```
-M → Male
-F → Female
-U → Unisex / Unknown / Accessory
+purchase_price_usd  → what owner paid supplier (from Sheets, set on import)
+sale_price_mxn      → listed price (set manually or via Database Refresh)
+selled_price_mxn    → actual sale price (set when item is sold via Sales)
 ```
 
 ---
 
-## 4. Configuration Files
+## 5. Configuration
 
-### application.yml
+### application.yml (key values)
 ```yaml
 spring:
-  application:
-    name: nenestore-api
   datasource:
     url: jdbc:postgresql://localhost:5433/nenesport_db?sslmode=disable
     username: nenestore
     password: nenestore123
-    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: validate
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+      ddl-auto: validate        # Flyway owns schema, Hibernate only validates
   flyway:
-    enabled: true
     locations: classpath:db/migration
 
 server:
@@ -165,7 +199,7 @@ google:
     credentials-file: classpath:sheetsCredentials.json
 
 storage:
-  images-path: ./images/items/
+  images-path: ./images/
 ```
 
 ### docker-compose.yml
@@ -174,175 +208,108 @@ services:
   postgres:
     image: postgres:16
     container_name: nenesport_db
-    restart: unless-stopped
+    ports:
+      - "5433:5432"    # 5433 on host — NEVER change, native PG owns 5432
     environment:
       POSTGRES_DB: nenesport_db
       POSTGRES_USER: nenestore
       POSTGRES_PASSWORD: nenestore123
-    ports:
-      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-volumes:
-  postgres_data:
 ```
 
-**Note:** Port is `5433` on host (not 5432) because the work machine has a native PostgreSQL on 5432.
-
-### Important files NOT in GitHub (gitignored)
+### Gitignored files (copy manually per machine)
 ```
-src/main/resources/sheetsCredentials.json   ← Google Service Account credentials
+src/main/resources/sheetsCredentials.json   ← Google Service Account key
 images/                                      ← downloaded product images
 ```
 
 ---
 
-## 5. pom.xml Key Dependencies
+## 6. Environment & Machine Notes
 
-```xml
-spring-boot-starter-web
-spring-boot-starter-data-jpa
-spring-boot-starter-security
-postgresql (runtime)
-flyway-core
-flyway-database-postgresql
-jjwt-api / jjwt-impl / jjwt-jackson  (version 0.12.6)
-google-api-services-sheets (v4-rev20230815-2.0.0)
-google-auth-library-oauth2-http (1.19.0)
-```
+| Concern | Rule |
+|---|---|
+| Terminal on Windows | Git Bash ONLY — PowerShell mangles curl, env vars |
+| YAML indentation | 2 spaces — tabs cause silent startup failures |
+| Java version | JDK 21 — work machines also have Java 7/8, verify JAVA_HOME |
+| DB port | Always 5433 on host — native PostgreSQL owns 5432 on work machines |
+| Node | v20+ required, installed in `frontend/` only — never at project root |
+| Commits | Work on `dev`, merge to `main` when stable |
 
 ---
 
-## 6. Working Endpoints
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | /api/auth/register | None | Create user, returns JWT |
-| POST | /api/auth/login | None | Login, returns JWT |
-| GET | /api/health | JWT | Health check |
-| GET | /api/orders | JWT | List all orders |
-| GET | /api/sync/preview | JWT | Preview new Sheet orders with auto-gender |
-| POST | /api/sync/confirm | JWT | Confirm and insert specific orders |
-| POST | /api/sync/all | JWT | One-shot: preview + confirm all new orders |
-| GET | /api/sheets-test | JWT | Debug: raw Sheet orders data |
-
----
-
-## 7. Current Bug — CRITICAL 🔴
-
-**Problem:** Spring Security is NOT loading `SecurityConfig.java` on a fresh machine clone.
-
-**Symptom:**
-```
-Using generated security password: ea83640d-...
-```
-This line in startup logs means Spring fell back to default Basic Auth instead of using our JWT configuration. All endpoints return empty response (401 with no body) instead of proper JWT-protected responses.
-
-**Root cause suspected:** One of two things:
-1. `SecurityConfig.java` or `JwtFilter.java` is missing from the cloned repo (files may not have been committed on the previous machine)
-2. A compilation error is silently preventing the security package from loading
-
-**Files to verify exist:**
-```
-src/main/java/com/nenestore/api/security/SecurityConfig.java
-src/main/java/com/nenestore/api/security/JwtFilter.java
-```
-
-**What SecurityConfig.java must contain:**
-```java
-@Configuration
-@EnableWebSecurity
-public class SecurityConfig {
-    // must have @Bean SecurityFilterChain
-    // must have @Bean PasswordEncoder (BCryptPasswordEncoder)
-    // must permit /api/auth/**
-    // must add JwtFilter before UsernamePasswordAuthenticationFilter
-    // must set SessionCreationPolicy.STATELESS
-    // must disable CSRF
-}
-```
-
-**What to do first:**
-1. Run `git status` and `git log --oneline -10` to see what was actually committed
-2. Check if security package files exist on disk
-3. If missing — recreate them (code below)
-4. Run `./mvnw spring-boot:run` and verify the generated password line is GONE
-
----
-
-## 8. What Is NOT Built Yet
-
-### Backend (remaining)
-```
-[ ] GET  /api/inventory              list items with search + filters
-[ ] PATCH /api/inventory/{id}/status toggle Stock/Unavailable
-[ ] PATCH /api/inventory/{id}/price  set sale_price_mxn
-[ ] GET  /api/dashboard/stats        total stock, sold, value
-[ ] GET  /api/dashboard/orders       last N orders
-[ ] POST /api/sales                  register a sale (cash or credit)
-[ ] POST /api/sales/{id}/payments    register a credit payment
-[ ] GET  /api/clients                list clients
-[ ] POST /api/clients                create client
-[ ] GET  /api/catalog/pdf            generate PDF catalog with filters
-[ ] Global error handling            clean JSON errors instead of stack traces
-```
-
-### Frontend (not started)
-```
-[ ] React + Vite + Tailwind setup
-[ ] Login screen
-[ ] Sidebar layout (Dashboard, Inventory, Catalog, DB Update, Sales)
-[ ] Dashboard screen
-[ ] Inventory screen with search
-[ ] Sale registry screen
-[ ] Credit sales view
-[ ] Client list + profile
-[ ] PDF catalog generator screen
-```
-
----
-
-## 9. Environment Notes
-
-- **Work machine:** Windows — two machines at same job, both need fresh setup
-- **Personal machine:** Linux
-- **Terminal:** Always use Git Bash on Windows, NOT PowerShell (curl behaves differently)
-- **Java situation:** Work machines have Java 7 and 8 installed (legacy job projects). JDK 21 needs to be installed separately from https://adoptium.net — use the MSI installer and check "Set JAVA_HOME" during install
-- **YAML indentation:** Always use 2 spaces, never tabs (caused multiple failures)
-- **Port:** PostgreSQL runs on 5433 (not 5432) on work machines due to native PG conflict
-
----
-
-## 10. Recovery Procedure (fresh machine)
+## 7. Recovery Procedure (Fresh Machine)
 
 ```bash
 # 1. Clone
-git clone https://github.com/YOUR_USERNAME/nenestore-api.git
-cd nenestore-api
-git checkout dev
+git clone https://github.com/fapa03/nenestore.git
+cd nenestore && git checkout dev
 
-# 2. Start DB
+# 2. Copy credentials (manual)
+# Place sheetsCredentials.json → src/main/resources/
+
+# 3. Start database
 docker compose up -d
 
-# 3. Start app (Flyway runs all 3 migrations automatically)
+# 4. Start backend (Flyway auto-applies V1, V2, V3)
 ./mvnw spring-boot:run
 
-# 4. Register admin user
+# 5. Register admin user
 curl -X POST "http://localhost:8080/api/auth/register" \
   -H "Content-Type: application/json" \
   -d '{"username":"antonio","password":"admin123","role":"ADMIN"}'
 
-# 5. Sync all data from Google Sheets
-curl -X POST "http://localhost:8080/api/sync/all" \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
+# 6. Import inventory
+# POST /api/sync/all with Bearer token
 
-**Prerequisites per machine:**
-- Docker Desktop installed
-- JDK 21 installed (not JRE, not Java 8)
-- Git installed
-- `sheetsCredentials.json` copied manually to `src/main/resources/`
+# 7. Restore prices and status
+# POST /api/sync/refresh with Bearer token
+
+# 8. Start frontend
+cd frontend && npm install && npm run dev
+```
 
 ---
 
-*Handoff document generated June 2026 — Nenestore API v0.1 dev*
+## 8. Known Issues & Resolved Bugs
+
+| Issue | Status | Resolution |
+|---|---|---|
+| Spring Security falling back to Basic Auth | Resolved | Was PowerShell not sending JSON body — use Git Bash |
+| color/size swapped on import | Resolved | Google Sheets columns mapped by name not index |
+| total_items = 0 on all orders | Resolved | SQL UPDATE recalculated from actual items count |
+| Images saving to wrong path | Resolved | `imagesPath + "items/"` prefix added |
+| `sales_price_mxn` not updating | Resolved | Column name has 's' — `sales_` not `sale_` |
+| 12 missing images after sync | Resolved | repair-images endpoint re-downloads from Sheets |
+| SSE endpoint returning 403 | Resolved | JWT token accepted via `?token=` query param |
+| Export dropdown closes immediately | In progress | `e.stopPropagation()` on Export button click |
+
+---
+
+## 9. Immediate Next Steps
+
+1. **Commit current state** — export dropdown fix + CreditSales WhatsApp clipboard + Database Refresh
+2. **Merge dev → main**
+3. **Optional polish:**
+   - User management screen (ADMIN only)
+   - Monthly revenue chart on Dashboard
+   - Scheduled auto-sync
+
+---
+
+## 10. Future Roadmap
+
+```
+[ ] User management screen
+[ ] Scheduled @Scheduled auto-sync job
+[ ] Barcode scanner integration
+[ ] Monthly revenue chart
+[ ] Full Docker containerization (Spring Boot + React + Nginx)
+[ ] Cloud server deployment
+[ ] Cloudflare R2 image storage (replace ./images/items/)
+```
+
+---
+
+*Nenestore Handoff v2.0 — July 2026 — All core features complete*

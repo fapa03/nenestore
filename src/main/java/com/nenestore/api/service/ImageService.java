@@ -27,7 +27,7 @@ public class ImageService {
             return null;
 
         try {
-            Path directory = Paths.get(imagesPath + "items/");
+            Path directory = Path.of(imagesPath).resolve("items");
             Files.createDirectories(directory);
 
             String filename = sku + ".jpg";
@@ -70,7 +70,7 @@ public class ImageService {
         // imagesPath is like ./images/
         // so we extract just the filename
         String filename = imageUrl.replace("/images/items/", "");
-        Path filePath = Paths.get(imagesPath + "items/" + filename);
+        Path filePath = Path.of(imagesPath).resolve("items").resolve(filename);
         return Files.exists(filePath);
     }
 

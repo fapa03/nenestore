@@ -9,6 +9,7 @@ export default function Inventory() {
     const [gender, setGender] = useState('')
     const [status, setStatus] = useState('')
     const [size, setSize] = useState('')
+    const [showExportMenu, setShowExportMenu] = useState(false)
 
     const fetchItems = () => {
         setLoading(true)
@@ -25,6 +26,16 @@ export default function Inventory() {
 
     useEffect(() => { fetchItems() }, [])
 
+    useEffect(() => {
+        const handleClickOutside = () => setShowExportMenu(false)
+        if (showExportMenu) {
+            document.addEventListener('click', handleClickOutside)
+        }
+        return () => document.removeEventListener('click', handleClickOutside)
+    }, [showExportMenu])
+
+
+
     const handleSearch = (e) => {
         e.preventDefault()
         fetchItems()
@@ -34,6 +45,51 @@ export default function Inventory() {
         const newStatus = item.status === 'Stock' ? 'Unavailable' : 'Stock'
         await api.patch(`/inventory/${item.id}/status`, { status: newStatus })
         fetchItems()
+    }
+
+    const exportData = (format) => {
+        if (items.length === 0) return
+
+        if (format === 'csv') {
+            const headers = [
+                'SKU', 'Product', 'Color', 'Size', 'Gender',
+                'Status', 'Purchase Price USD', 'Sale Price MXN',
+                'Order Number', 'Order Date', 'Image URL', 'Barcode'
+            ]
+            const rows = items.map(i => [
+                i.sku,
+                `"${i.product}"`,
+                i.color,
+                i.size,
+                i.gender,
+                i.status,
+                i.purchasePriceUsd,
+                i.salePriceMxn ?? '',
+                i.orderNumber,
+                i.orderDate,
+                i.imageUrl ?? '',
+                i.barcode ?? ''
+            ])
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+            downloadFile(csv, 'nenestore-inventory.csv', 'text/csv')
+        }
+
+        if (format === 'json') {
+            const json = JSON.stringify(items, null, 2)
+            downloadFile(json, 'nenestore-inventory.json', 'application/json')
+        }
+
+        setShowExportMenu(false)
+    }
+
+    const downloadFile = (content, filename, type) => {
+        const blob = new Blob([content], { type })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        a.click()
+        URL.revokeObjectURL(url)
     }
 
     return (
@@ -103,6 +159,45 @@ export default function Inventory() {
                         <Filter size={14} />
                         Filter
                     </button>
+
+                    {/* Export button */}
+                    <div className="relative">
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                setShowExportMenu(prev => !prev)
+                            }}
+                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2
+               rounded-lg text-sm font-semibold transition-colors
+               flex items-center gap-2"
+                        >
+                            Export
+                            <span className="text-xs">▾</span>
+                        </button>
+
+                        {showExportMenu && (
+                            <div className="absolute right-0 top-full mt-1 bg-brand-black border
+                    border-brand-gray/20 rounded-lg shadow-xl z-10 overflow-hidden
+                    min-w-32">
+                                <button
+                                    onClick={() => exportData('csv')}
+                                    className="w-full text-left px-4 py-2.5 text-sm text-brand-smoke
+                   hover:bg-brand-deep transition-colors"
+                                >
+                                    📄 CSV
+                                </button>
+                                <button
+                                    onClick={() => exportData('json')}
+                                    className="w-full text-left px-4 py-2.5 text-sm text-brand-smoke
+                   hover:bg-brand-deep transition-colors border-t
+                   border-brand-gray/10"
+                                >
+                                    📋 JSON
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </form>
             </div>
 
@@ -171,8 +266,8 @@ export default function Inventory() {
                                     {/* Gender */}
                                     <td className="px-4 py-2">
                                         <span className={`px-2 py-0.5 rounded text-xs font-semibold ${item.gender === 'F' ? 'bg-pink-500/20 text-pink-400' :
-                                                item.gender === 'M' ? 'bg-blue-500/20 text-blue-400' :
-                                                    'bg-brand-gray/20 text-brand-gray'
+                                            item.gender === 'M' ? 'bg-blue-500/20 text-blue-400' :
+                                                'bg-brand-gray/20 text-brand-gray'
                                             }`}>
                                             {item.gender}
                                         </span>
@@ -189,8 +284,8 @@ export default function Inventory() {
                                     {/* Status */}
                                     <td className="px-4 py-2">
                                         <span className={`px-2 py-0.5 rounded text-xs font-semibold ${item.status === 'Stock'
-                                                ? 'bg-green-500/20 text-green-400'
-                                                : 'bg-red-500/20 text-red-400'
+                                            ? 'bg-green-500/20 text-green-400'
+                                            : 'bg-red-500/20 text-red-400'
                                             }`}>
                                             {item.status}
                                         </span>
@@ -201,8 +296,8 @@ export default function Inventory() {
                                         <button
                                             onClick={() => toggleStatus(item)}
                                             className={`text-xs px-3 py-1 rounded-lg font-semibold transition-colors ${item.status === 'Stock'
-                                                    ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-                                                    : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                                                ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                                                : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
                                                 }`}
                                         >
                                             {item.status === 'Stock' ? 'Mark Sold' : 'Restore'}

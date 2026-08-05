@@ -227,6 +227,18 @@ public class SaleService {
                             ? cs.getSale().getClient().getWhatsapp()
                             : "")
                     : null);
+            // ← add payment history
+            List<Map<String, Object>> payments = cs.getPayments() != null
+                    ? cs.getPayments().stream().map(p -> {
+                        Map<String, Object> pm = new HashMap<>();
+                        pm.put("date", p.getPaymentDate());
+                        pm.put("amount", p.getAmount());
+                        pm.put("notes", p.getNotes());
+                        return pm;
+                    }).toList()
+                    : List.of();
+            map.put("payments", payments);
+
             return map;
         }).toList();
     }
