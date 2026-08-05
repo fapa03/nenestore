@@ -24,6 +24,14 @@ spring:
 server:
   port: 8080
 
+jwt:
+  secret: ${JWT_SECRET:nenestore-super-secret-key-2024-minimum-256-bits!!}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
 google:
   sheets:
     spreadsheet-id: 13JG71z4WHQYay9VAGNiJNrVCH7UTaTta-eAk7A_fmQU
